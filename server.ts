@@ -2,7 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { PlaywrightCrawler } from "crawlee";
 import dotenv from "dotenv";
 import Fastify from "fastify";
-
+import fetch from "node-fetch";
 
 // Load environment variables from .env file
 dotenv.config();
@@ -10,10 +10,53 @@ dotenv.config();
 // 🔑 Use your Supabase URL and Anon Key from environment variables
 const supabaseUrl = process.env.SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_KEY || "";
+const slackWebhookUrl = process.env.SLACK_WEBHOOK_URL || "";
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 const app = Fastify();
+
+// Utility function to send Slack alerts for mismatches
+async function sendSlackAlert(restaurant: any) {
+  try {
+    if (!slackWebhookUrl) {
+      console.warn("Slack webhook URL not configured. Skipping Slack notification.");
+      return;
+    }
+
+    // Format the timestamp
+    const now = new Date();
+    const istTime = new Date(now.getTime() + 5.5 * 60 * 60 * 1000); // IST is UTC+5:30
+    const formattedTime = istTime.toISOString().replace("T", " ").substring(0, 19) + " IST";
+
+    // Create the message payload
+    const message = {
+      text: `⚠️ Mismatch detected!
+Restaurant: ${restaurant.name}
+Expected: ${restaurant.expected ? "OPEN" : "CLOSED"}
+Actual: ${restaurant.actual ? "OPEN" : "CLOSED"}
+Address: ${restaurant.address}
+Time: ${formattedTime}`,
+    };
+
+    // Send the POST request to Slack
+    const response = await fetch(slackWebhookUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(message),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Slack API responded with status ${response.status}`);
+    }
+
+    console.log(`✅ Slack alert sent for restaurant: ${restaurant.name}`);
+  } catch (error) {
+    console.error(`❌ Failed to send Slack alert for restaurant ${restaurant.name}:`, error);
+  }
+}
 
 // Simple function to determine if a restaurant should be open based on hours
 function getExpected(opening: string): boolean {
@@ -136,7 +179,7 @@ function getExpectedFromHoursText(hoursText: string): boolean {
   // In a real implementation, you would parse the specific hours from the text
   // For this demo, we'll assume business hours are 11:00 AM to 11:00 PM
   const businessStart = 1100; // 11:00 AM
-  const businessEnd = 2300;   // 11:00 PM
+  const businessEnd = 2300; // 11:00 PM
 
   return currentTime >= businessStart && currentTime < businessEnd;
 }
@@ -186,9 +229,11 @@ async function scrapeSwiggyData() {
               await restaurant.locator("div[data-testid=\"rdp_serviceability_status_message\"]").first().textContent()
               || "";
             // Use more specific selectors to determine if restaurant is currently open or closed
-            const isOpenElement = await restaurant.locator('xpath=//*[contains(text(), "OPEN, CLOSES AT")]').first().isVisible();
-            const isClosedElement = await restaurant.locator('xpath=//*[contains(text(), "CLOSED, OPENS AT")]').first().isVisible();
-            
+            const isOpenElement = await restaurant.locator("xpath=//*[contains(text(), \"OPEN, CLOSES AT\")]").first()
+              .isVisible();
+            const isClosedElement = await restaurant.locator("xpath=//*[contains(text(), \"CLOSED, OPENS AT\")]")
+              .first().isVisible();
+
             // Determine if restaurant is currently open
             const isCurrentlyOpen = isOpenElement && !isClosedElement;
             const isClosed = isClosedElement;
@@ -248,7 +293,7 @@ app.get("/scrape", async () => {
   try {
     // Use the live scraping function instead of the hardcoded one
     const scrapedData = await scrapeSwiggyData();
-    
+
     // Process results for database insertion
     const dbResults = scrapedData.map(result => ({
       name: `${result.platform} - ${result.name}`,
@@ -289,6 +334,13 @@ app.get("/scrape", async () => {
     if (error) {
       console.error("Supabase upsert error:", error);
       return { success: false, error: error.message };
+    }
+
+    // Send Slack alerts for any mismatches
+    for (const restaurant of scrapedData) {
+      if (restaurant.mismatch) {
+        await sendSlackAlert(restaurant);
+      }
     }
 
     return { success: true, count: scrapedData.length, results: scrapedData };
