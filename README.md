@@ -139,10 +139,14 @@ graph TD
 2. **Configure Environment**
    Update `.env` with:
    ```env
+   # Frontend
+   VITE_SUPABASE_URL=your_supabase_project_url
+   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+   
+   # Backend
    POSTGRES_PASSWORD=your_secure_password
-   JWT_SECRET=your_jwt_secret
-   ANON_KEY=your_anon_key
-   SERVICE_ROLE_KEY=your_service_role_key
+   UPABASE_URL=your_supabase_project_url
+   SUPABASE_ANON_KEY=your_supabase_anon_key
    SITE_URL=http://localhost:3000
    ```
 
@@ -152,8 +156,7 @@ graph TD
    ```
 
 4. **Access Dashboard**
-   - Studio: http://localhost:3000
-   - Kong: http://localhost:8000
+   - Admin: http://localhost:3001
    - PostgreSQL: localhost:5432
 
 ## 🖥️ Frontend Development
