@@ -13,6 +13,9 @@ graph TD
     F[NGROK] -->|Public URL| A
 ```
 
+<!-- Place the restaurant_monitor_flow.png in the assets directory to display it here -->
+![Restaurant Monitor Flow](./assets/restaurant_monitor_flow.png)
+
 ## 🛠️ Tech Stack
 
 - **Frontend**:
