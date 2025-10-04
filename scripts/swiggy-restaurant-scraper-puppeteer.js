@@ -4,6 +4,16 @@ import StealthPlugin from "puppeteer-extra-plugin-stealth";
 // Add stealth plugin to avoid detection
 puppeteer.use(StealthPlugin());
 
+// Function to clean address prefixes
+function cleanAddress(address) {
+  if (!address || typeof address !== "string") return address;
+
+  // Remove prefixes like "LocationUnit.No." and "Location"
+  return address
+    .replace(/^Location\s*/i, "")
+    .trim();
+}
+
 /**
  * Fetches restaurant information from a Swiggy URL using Puppeteer
  * @param {string} url - The Swiggy restaurant URL
@@ -116,6 +126,9 @@ async function fetchRestaurantInfo(url) {
         isOpen,
       };
     });
+
+    // Clean the address
+    restaurantInfo.address = cleanAddress(restaurantInfo.address);
 
     // Now try to click the timing button to get detailed hours
     try {

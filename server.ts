@@ -1,3 +1,4 @@
+import cors from "@fastify/cors";
 import { createClient } from "@supabase/supabase-js";
 import dotenv from "dotenv";
 import Fastify from "fastify";
@@ -18,7 +19,26 @@ const slackWebhookUrl = process.env.SLACK_WEBHOOK_URL || "";
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-const app = Fastify();
+const app = Fastify({
+  logger: true,
+});
+
+app.register(cors, {
+  origin: ["http://localhost:3001", "http://localhost:3002", "http://127.0.0.1:3001", "http://127.0.0.1:3002"],
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+});
+
+// Function to clean address prefixes
+function cleanAddress(address: string): string {
+  if (!address || typeof address !== "string") return address;
+
+  // Remove prefixes like "LocationUnit.No." and "Location"
+  return address
+    .replace(/^Location\s*/i, "")
+    .trim();
+}
 
 // Utility function to send Slack alerts for mismatches
 async function sendSlackAlert(restaurant: any) {
@@ -244,6 +264,9 @@ async function fetchRestaurantInfo(url: string) {
       };
     });
 
+    // Clean the address
+    restaurantInfo.address = cleanAddress(restaurantInfo.address);
+
     // Now try to click the timing button to get detailed hours
     try {
       // Wait a bit for all elements to load
@@ -295,7 +318,7 @@ async function fetchRestaurantInfo(url: string) {
                 // Extract the time range
                 const timeMatch = text.match(/(\d{1,2}[A-Z]{2}\s*-\s*\d{1,2}[:\d]*[A-Z]{2})/i);
                 if (timeMatch) {
-                  hoursData[day] = timeMatch[1]!;
+                  hoursData[day] = timeMatch[1];
                 }
               }
             }
@@ -309,14 +332,14 @@ async function fetchRestaurantInfo(url: string) {
             for (const popup of popupElements) {
               const popupText = popup.textContent;
               // Look for day-time patterns
-              const lines = popupText!.split("\n");
+              const lines = popupText.split("\n");
               for (const line of lines) {
                 const trimmedLine = line.trim();
                 for (const day of days) {
                   if (trimmedLine.includes(day) && trimmedLine.match(/\d+/)) {
                     const timeMatch = trimmedLine.match(/(\d{1,2}[A-Z]{2}\s*-\s*\d{1,2}[:\d]*[A-Z]{2})/i);
                     if (timeMatch) {
-                      hoursData[day] = timeMatch[1]!;
+                      hoursData[day] = timeMatch[1];
                     }
                   }
                 }
@@ -328,16 +351,16 @@ async function fetchRestaurantInfo(url: string) {
         });
 
         if (detailedHours) {
-          (restaurantInfo as any).detailedHours = detailedHours;
+          restaurantInfo.detailedHours = detailedHours;
         }
       }
-    } catch (clickError: any) {
+    } catch (clickError) {
       // If we can't click or extract detailed hours, that's okay
       console.log("Could not extract detailed hours:", clickError.message);
     }
 
     return restaurantInfo;
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error fetching restaurant info:", error);
     return {
       name: "Error",
@@ -463,7 +486,7 @@ app.get("/scrape", async () => {
       return {
         name: `Swiggy - ${result.name}`,
         address: result.address,
-        opening_hours: JSON.stringify(displayHours),
+        opening_hours: typeof displayHours === "string" ? displayHours : JSON.stringify(displayHours),
         expected: result.expected,
         actual: result.actual,
         mismatch: result.mismatch,

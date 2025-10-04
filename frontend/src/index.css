@@ -1,0 +1,78 @@
+/* Base styles */
+:root {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Reset and base styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: #f0f2f5;
+}
+
+/* Ant Design overrides */
+.ant-layout {
+  background: #f0f2f5;
+}
+
+.ant-layout-header {
+  padding: 0 24px;
+  height: 64px;
+  line-height: 64px;
+  background: #001529 !important;
+}
+
+/* Table styles */
+.ant-table {
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+}
+
+/* Mismatch row highlighting */
+.mismatch-row {
+  background-color: #fff2f0 !important;
+  border-left: 4px solid #ff4d4f;
+}
+
+.mismatch-row:hover {
+  background-color: #ffccc7 !important;
+}
+
+/* Status tags */
+.ant-tag-success {
+  border-color: #b7eb8f;
+  background: #f6ffed;
+}
+
+.ant-tag-error {
+  border-color: #ffa39e;
+  background: #fff2f0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .ant-layout-header {
+    padding: 0 16px;
+  }
+  
+  .ant-table {
+    border-radius: 0;
+  }
+}
