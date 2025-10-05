@@ -238,20 +238,36 @@ async function fetchRestaurantInfo(url: string) {
       let currently = "Status unknown";
       let isOpen = false;
 
-      // Look for status indicators
-      const allText = document.body.textContent!.toLowerCase();
-      if (
-        allText.includes("currently open") || allText.includes("open now")
-        || (allText.includes("open") && !allText.includes("closed"))
-      ) {
-        currently = "Open";
-        isOpen = true;
-      } else if (
-        allText.includes("currently closed") || allText.includes("closed now")
-        || allText.includes("closed")
-      ) {
-        currently = "Closed";
-        isOpen = false;
+      // First try to get status from the serviceability status message
+      const statusElement = document.querySelector('[data-testid="rdp_serviceability_status_message"]');
+      if (statusElement) {
+        const statusText = statusElement.textContent?.trim().toLowerCase() || '';
+        // Check for 'closed' first to handle cases like 'CLOSED, OPENS AT 10AM' correctly
+        if (statusText.includes('close')) {
+          currently = "Closed";
+          isOpen = false;
+        } else if (statusText.includes('open')) {
+          currently = "Open";
+          isOpen = true;
+        }
+      }
+
+      // Fallback to text-based detection if specific element not found
+      if (currently === "Status unknown") {
+        const allText = document.body.textContent!.toLowerCase();
+        if (
+          allText.includes("currently open") || allText.includes("open now")
+          || (allText.includes("open") && !allText.includes("closed"))
+        ) {
+          currently = "Open";
+          isOpen = true;
+        } else if (
+          allText.includes("currently closed") || allText.includes("closed now")
+          || allText.includes("closed")
+        ) {
+          currently = "Closed";
+          isOpen = false;
+        }
       }
 
       // Return basic info
