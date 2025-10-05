@@ -82,54 +82,76 @@ Time: ${formattedTime}`,
   }
 }
 
-// Enhanced function to determine if a restaurant should be open based on detailed hours
+// Function to get current IST time
+function getCurrentIST() {
+  const nowUTC = new Date();
+  const IST_OFFSET = 5.5 * 60 * 60 * 1000; // IST is UTC+5:30
+  return new Date(nowUTC.getTime() + IST_OFFSET);
+}
+
+// Function to determine if a restaurant should be open based on detailed hours
 function getExpectedFromDetailedHours(detailedHours: { [key: string]: string }): boolean {
-  const now = new Date();
+  const nowIST = getCurrentIST();
   const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-  const currentDayIndex = now.getDay();
-  const currentDay = dayNames[currentDayIndex];
+  const currentDay = dayNames[nowIST.getDay()] || '';
 
   // Check if detailedHours has the current day as a key
-  if (!detailedHours || !currentDay || !(currentDay in detailedHours)) {
+  if (!currentDay || !detailedHours || !(currentDay in detailedHours)) {
     return false;
   }
 
   // Get today's hours
-  const todayHours = detailedHours[currentDay];
-  if (!todayHours) return false;
-
+  const todayHours = detailedHours[currentDay] || '';
+  
   // Parse the opening hours string (e.g., "11:00AM - 11:59PM")
-  const parts = todayHours.split(" - ");
-  if (parts.length !== 2) return false;
-
-  const openTime = parts[0] || "";
-  const closeTime = parts[1] || "";
-  const currentTime = now.getHours() * 100 + now.getMinutes(); // e.g., 13:30 becomes 1330
-
-  // Convert times to 24-hour format numbers
+  const [openTime, closeTime] = todayHours.split(" - ");
+  if (!openTime || !closeTime) return false;
+  // Convert current IST time to minutes since midnight
+  const currentMinutes = nowIST.getHours() * 60 + nowIST.getMinutes();
+  
+  // Convert time string to minutes since midnight (e.g., "11:00AM" -> 660)
   const parseTime = (timeStr: string): number => {
-    const isPM = timeStr.includes("PM");
-    const timeParts = timeStr.replace(/(AM|PM)/, "").split(":");
-    let hours = parseInt(timeParts[0] || "0", 10);
-    let minutes = parseInt(timeParts[1] || "0", 10);
+    if (!timeStr) return 0;
+    
+    // Normalize the time string
+    timeStr = timeStr.replace(/\s+/g, '').toUpperCase();
+    const isPM = timeStr.endsWith("PM");
+    const isAM = timeStr.endsWith("AM");
+    
+    // Extract the time part (remove AM/PM)
+    const [main] = timeStr.split(/AM|PM/);
+    if (!main) return 0;
+    
+    // Split into hours and minutes
+    const [hoursStr, minutesStr] = main.split(':');
+    let hours = hoursStr ? parseInt(hoursStr, 10) : 0;
+    const minutes = minutesStr ? parseInt(minutesStr, 10) : 0;
 
-    if (isPM && hours !== 12) hours += 12;
-    if (!isPM && hours === 12) hours = 0;
+    // Convert to 24-hour format
+    if (isPM && hours < 12) hours += 12;
+    if (isAM && hours === 12) hours = 0;
 
-    return hours * 100 + minutes;
+    console.log(`Parsed time: ${timeStr} -> ${hours}:${minutes.toString().padStart(2, '0')} -> ${hours * 60 + minutes} minutes`);
+    return hours * 60 + minutes; // Return minutes since midnight
   };
 
-  const openTime24 = parseTime(openTime);
-  const closeTime24 = parseTime(closeTime);
+  // Parse open and close times
+  const openMinutes = parseTime(openTime);
+  const closeMinutes = parseTime(closeTime);
 
-  // Handle overnight hours (e.g., 11:00AM - 11:59PM)
-  if (closeTime24 < openTime24) {
-    // Restaurant is open overnight
-    return currentTime >= openTime24 || currentTime < closeTime24;
-  } else {
-    // Normal hours
-    return currentTime >= openTime24 && currentTime < closeTime24;
-  }
+  // Debug logging with IST time
+  console.log('\n--- DEBUG ---');
+  console.log('Current time (IST):', nowIST.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }));
+  console.log(`Today: ${currentDay}`);
+  console.log(`Hours: ${todayHours}`);  
+  console.log(`Open: ${openTime} (${openMinutes} mins)`);
+  console.log(`Close: ${closeTime} (${closeMinutes} mins)`);
+  console.log(`Now (IST): ${nowIST.getHours()}:${nowIST.getMinutes().toString().padStart(2, '0')} (${currentMinutes} mins)`);
+  console.log(`Is open: ${currentMinutes >= openMinutes && currentMinutes < closeMinutes ? 'YES' : 'NO'}`);
+  console.log('--- END DEBUG ---\n');
+
+  // Check if current time is within the open-close range
+  return currentMinutes >= openMinutes && currentMinutes < closeMinutes;
 }
 
 // Function to determine if a restaurant should be open based on hours text or detailed hours
@@ -283,25 +305,20 @@ async function fetchRestaurantInfo(url: string) {
     // Clean the address
     restaurantInfo.address = cleanAddress(restaurantInfo.address);
 
-    // Now try to click the timing button to get detailed hours
+    // Now try to get detailed hours from the timings popup
     try {
-      // Wait a bit for all elements to load
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Look for a timing or hours button and click it
+      // Wait for the timings button and click it
       const timingButtonSelectors = [
-        "[class*=\"Timing\"]",
-        "[class*=\"Hours\"]",
-        "[data-testid*=\"timing\"]",
-        "button[class*=\"Timing\"]",
-        "button[class*=\"Hours\"]",
-        "div[class*=\"Timing\"]",
-        "div[class*=\"Hours\"]",
+        '[data-testid="restaurant-detail-info-timing"]',
+        '[class*="Timing"]',
+        '[class*="Hours"]',
+        '[data-testid*="timing"]',
       ];
 
       let timingButton = null;
       for (const selector of timingButtonSelectors) {
         try {
+          timingButton = await page.waitForSelector(selector, { timeout: 5000 });
           timingButton = await page.$(selector);
           if (timingButton) {
             break;
