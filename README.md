@@ -214,9 +214,12 @@ graph TD
    - Query optimization with proper indexing
 
 3. **Cost Estimation (Self-hosted)**
-   - Server: $5-10/month (VPS like DigitalOcean/Linode)
-   - Storage: $1-5/month (scales with data)
-   - Total: ~$6-15/month for 10,000 restaurants
+   - Database (Postgres/Supabase) VM: $5-15/month (VPS like DigitalOcean/Linode/Azure)
+   - Storage: $1-5/month (scales with data volume and history retention)
+   - Scraper VM/Worker: $10-30/month (depends on scrape frequency/resources)
+   - App Server (Fastify/Node): $5-10/month (low/medium traffic)
+   - Slack (alerts): $0 (webhook API is free)
+   - **Total:** ~$21–65/month for 10,000 restaurants
 
 ### High Availability
 
