@@ -93,7 +93,7 @@ function getCurrentIST() {
 function getExpectedFromDetailedHours(detailedHours: { [key: string]: string }): boolean {
   const nowIST = getCurrentIST();
   const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-  const currentDay = dayNames[nowIST.getDay()] || '';
+  const currentDay = dayNames[nowIST.getDay()] || "";
 
   // Check if detailedHours has the current day as a key
   if (!currentDay || !detailedHours || !(currentDay in detailedHours)) {
@@ -101,29 +101,29 @@ function getExpectedFromDetailedHours(detailedHours: { [key: string]: string }):
   }
 
   // Get today's hours
-  const todayHours = detailedHours[currentDay] || '';
-  
+  const todayHours = detailedHours[currentDay] || "";
+
   // Parse the opening hours string (e.g., "11:00AM - 11:59PM")
   const [openTime, closeTime] = todayHours.split(" - ");
   if (!openTime || !closeTime) return false;
   // Convert current IST time to minutes since midnight
   const currentMinutes = nowIST.getHours() * 60 + nowIST.getMinutes();
-  
+
   // Convert time string to minutes since midnight (e.g., "11:00AM" -> 660)
   const parseTime = (timeStr: string): number => {
     if (!timeStr) return 0;
-    
+
     // Normalize the time string
-    timeStr = timeStr.replace(/\s+/g, '').toUpperCase();
+    timeStr = timeStr.replace(/\s+/g, "").toUpperCase();
     const isPM = timeStr.endsWith("PM");
     const isAM = timeStr.endsWith("AM");
-    
+
     // Extract the time part (remove AM/PM)
     const [main] = timeStr.split(/AM|PM/);
     if (!main) return 0;
-    
+
     // Split into hours and minutes
-    const [hoursStr, minutesStr] = main.split(':');
+    const [hoursStr, minutesStr] = main.split(":");
     let hours = hoursStr ? parseInt(hoursStr, 10) : 0;
     const minutes = minutesStr ? parseInt(minutesStr, 10) : 0;
 
@@ -131,7 +131,9 @@ function getExpectedFromDetailedHours(detailedHours: { [key: string]: string }):
     if (isPM && hours < 12) hours += 12;
     if (isAM && hours === 12) hours = 0;
 
-    console.log(`Parsed time: ${timeStr} -> ${hours}:${minutes.toString().padStart(2, '0')} -> ${hours * 60 + minutes} minutes`);
+    console.log(
+      `Parsed time: ${timeStr} -> ${hours}:${minutes.toString().padStart(2, "0")} -> ${hours * 60 + minutes} minutes`,
+    );
     return hours * 60 + minutes; // Return minutes since midnight
   };
 
@@ -140,15 +142,17 @@ function getExpectedFromDetailedHours(detailedHours: { [key: string]: string }):
   const closeMinutes = parseTime(closeTime);
 
   // Debug logging with IST time
-  console.log('\n--- DEBUG ---');
-  console.log('Current time (IST):', nowIST.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }));
+  console.log("\n--- DEBUG ---");
+  console.log("Current time (IST):", nowIST.toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }));
   console.log(`Today: ${currentDay}`);
-  console.log(`Hours: ${todayHours}`);  
+  console.log(`Hours: ${todayHours}`);
   console.log(`Open: ${openTime} (${openMinutes} mins)`);
   console.log(`Close: ${closeTime} (${closeMinutes} mins)`);
-  console.log(`Now (IST): ${nowIST.getHours()}:${nowIST.getMinutes().toString().padStart(2, '0')} (${currentMinutes} mins)`);
-  console.log(`Is open: ${currentMinutes >= openMinutes && currentMinutes < closeMinutes ? 'YES' : 'NO'}`);
-  console.log('--- END DEBUG ---\n');
+  console.log(
+    `Now (IST): ${nowIST.getHours()}:${nowIST.getMinutes().toString().padStart(2, "0")} (${currentMinutes} mins)`,
+  );
+  console.log(`Is open: ${currentMinutes >= openMinutes && currentMinutes < closeMinutes ? "YES" : "NO"}`);
+  console.log("--- END DEBUG ---\n");
 
   // Check if current time is within the open-close range
   return currentMinutes >= openMinutes && currentMinutes < closeMinutes;
@@ -261,14 +265,14 @@ async function fetchRestaurantInfo(url: string) {
       let isOpen = false;
 
       // First try to get status from the serviceability status message
-      const statusElement = document.querySelector('[data-testid="rdp_serviceability_status_message"]');
+      const statusElement = document.querySelector("[data-testid=\"rdp_serviceability_status_message\"]");
       if (statusElement) {
-        const statusText = statusElement.textContent?.trim().toLowerCase() || '';
+        const statusText = statusElement.textContent?.trim().toLowerCase() || "";
         // Check for 'closed' first to handle cases like 'CLOSED, OPENS AT 10AM' correctly
-        if (statusText.includes('close')) {
+        if (statusText.includes("close")) {
           currently = "Closed";
           isOpen = false;
-        } else if (statusText.includes('open')) {
+        } else if (statusText.includes("open")) {
           currently = "Open";
           isOpen = true;
         }
@@ -309,10 +313,10 @@ async function fetchRestaurantInfo(url: string) {
     try {
       // Wait for the timings button and click it
       const timingButtonSelectors = [
-        '[data-testid="restaurant-detail-info-timing"]',
-        '[class*="Timing"]',
-        '[class*="Hours"]',
-        '[data-testid*="timing"]',
+        "[data-testid=\"restaurant-detail-info-timing\"]",
+        "[class*=\"Timing\"]",
+        "[class*=\"Hours\"]",
+        "[data-testid*=\"timing\"]",
       ];
 
       let timingButton = null;

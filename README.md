@@ -14,6 +14,7 @@ graph TD
 ```
 
 <!-- Place the restaurant_monitor_flow.png in the assets directory to display it here -->
+
 ![Restaurant Monitor Flow](./assets/restaurant_monitor_flow.png)
 
 ## 🛠️ Tech Stack
@@ -142,7 +143,7 @@ graph TD
    # Frontend
    VITE_SUPABASE_URL=your_supabase_project_url
    VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-   
+
    # Backend
    POSTGRES_PASSWORD=your_secure_password
    UPABASE_URL=your_supabase_project_url
