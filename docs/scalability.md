@@ -16,7 +16,7 @@ flowchart TD
   UI[API Gateway / UI]
   Status[Status Query Service]
   Scheduler[Scheduler Service]
-  Queue[Job Queue (e.g. SQS)]
+  Queue[Job Queue]
   Workers[Scraper Workers]
   BrowserPool[Browser Pool / Playwright]
   Processor[Result Processor]
